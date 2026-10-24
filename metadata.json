@@ -1,0 +1,6 @@
+{
+  "name": "ZakPix AI - Production Image Compression & Optimization Platform",
+  "description": "ZakPix AI - Production-grade AI image compression, format conversion, and optimization engine powered by Sharp, libvips, and smart heuristics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
