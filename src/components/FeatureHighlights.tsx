@@ -10,15 +10,15 @@ export const FeatureHighlights: React.FC = () => {
   const features = [
     {
       icon: Cpu,
-      title: 'Real Libvips & Sharp Engine',
+      title: 'Private Browser Canvas Engine',
       description:
-        'Powered by high-performance C++ image processing bindings. Zero simulated numbers or fake compression statistics.',
+        'Compression and inspection run entirely on your device via the Canvas API. Images never leave the browser, and there is no native server dependency.',
     },
     {
       icon: Sparkles,
       title: 'Content-Aware AI Tuning',
       description:
-        'Analyzes visual entropy, alpha channel distribution, and high-frequency textures to pick optimal quantization matrices.',
+        'Analyzes visual entropy, alpha channel distribution, and color variance in-browser to pick the optimal format and quality settings.',
     },
     {
       icon: Split,
@@ -28,15 +28,15 @@ export const FeatureHighlights: React.FC = () => {
     },
     {
       icon: ShieldCheck,
-      title: 'Decompression Bomb Guards',
+      title: 'Safe, Sanitized Vectors',
       description:
-        'Strict limits (100 MP / 16K px), sanitized SVG vectors, and zero permanent server storage for complete privacy.',
+        'SVG uploads are sanitized in-browser, stripping scripts, event handlers, and dangerous elements before output. Nothing is stored permanently.',
     },
     {
       icon: Zap,
       title: 'Target File Size Convergence',
       description:
-        'Iterative binary search quality stepping achieves exact kilobyte targets without excessive blurring or guesswork.',
+        'Iterative quality stepping over Canvas re-encodes converges on kilobyte targets without excessive blurring or guesswork.',
     },
     {
       icon: FileCheck2,
@@ -54,7 +54,7 @@ export const FeatureHighlights: React.FC = () => {
             Engineered for Precision & Real Performance
           </h2>
           <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-            A production-ready platform that combines native Node.js codecs with client-side fallback
+            A privacy-first, client-side platform powered entirely by the Browser Canvas API
           </p>
         </div>
 

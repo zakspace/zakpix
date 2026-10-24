@@ -112,7 +112,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
                   Compression Engine
                 </h3>
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold tracking-wide uppercase bg-primary-500/10 text-primary-600 dark:text-primary-400 border border-primary-500/20">
-                  <Sparkles className="h-2.5 w-2.5" /> Sharp libvips
+                  <Sparkles className="h-2.5 w-2.5" /> Browser Canvas
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -214,14 +214,12 @@ export const Workspace: React.FC<WorkspaceProps> = ({
             >
               <option value="original">Keep Original Format</option>
               <option value="webp">WebP (Modern Standard, High Savings)</option>
-              <option value="avif">AVIF (Next-Gen AV1, Superior Quality)</option>
               <option value="jpeg">JPEG (Universal Compatibility)</option>
               <option value="png">PNG (Lossless & Alpha Transparency)</option>
-              <option value="gif">GIF (Animated Graphics)</option>
-              <option value="tiff">TIFF (Archival Quality)</option>
+              <option value="svg">SVG (Sanitize & Minify Vector)</option>
             </select>
             <span className="block mt-1 text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
-              Transcodes container while maintaining color profiles & alpha transparency
+              Canvas encodes WebP, JPEG, PNG, and minified SVG. Other formats fall back to WebP.
             </span>
           </div>
 

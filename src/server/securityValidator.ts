@@ -4,6 +4,7 @@
  */
 
 import { sniffFormat } from './formatRegistry.js';
+import { sanitizeSvg } from '../utils/svg.js';
 
 export const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
 export const MAX_IMAGE_PIXELS = 100_000_000; // 100 Megapixels
@@ -16,31 +17,8 @@ export interface ValidationResult {
   sniffedFormat?: string;
 }
 
-/**
- * Sanitize SVG content by stripping scripts, event handlers, and dangerous attributes
- */
-export function sanitizeSvg(svgContent: string): string {
-  let cleaned = svgContent;
-
-  // Remove script tags and content
-  cleaned = cleaned.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-
-  // Remove XML entities (prevent XXE attack)
-  cleaned = cleaned.replace(/<!ENTITY\b[^>]*>/gi, '');
-  cleaned = cleaned.replace(/<!DOCTYPE\b[^>]*>/gi, '');
-
-  // Remove inline event handlers (onload, onerror, onclick, etc.)
-  cleaned = cleaned.replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '');
-  cleaned = cleaned.replace(/\son\w+\s*=\s*[^\s>]+/gi, '');
-
-  // Remove javascript: and data: in href/xlink:href/src
-  cleaned = cleaned.replace(/(href|xlink:href|src)\s*=\s*["']\s*(?:javascript|data):[^"']*["']/gi, '');
-
-  // Remove <foreignObject> tags which can embed HTML/JS
-  cleaned = cleaned.replace(/<foreignObject\b[^<]*(?:(?!<\/foreignObject>)<[^<]*)*<\/foreignObject>/gi, '');
-
-  return cleaned.trim();
-}
+// Sanitization logic lives in the shared util so the browser and server stay in sync.
+export { sanitizeSvg };
 
 /**
  * Validate incoming image buffer for security risks, decompression bombs, and format spoofing

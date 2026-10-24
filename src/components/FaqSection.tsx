@@ -12,7 +12,7 @@ export const FaqSection: React.FC = () => {
   const faqs = [
     {
       q: 'Which image formats can I compress and convert?',
-      a: 'ZakPix AI decodes JPEG, PNG, WebP, AVIF, GIF, SVG, TIFF, BMP, and HEIC/HEIF containers. Output transcoding is fully supported for WebP, AVIF, JPEG, PNG, GIF, and TIFF using Sharp and libvips runtime bindings.',
+      a: 'ZakPix AI decodes JPEG, PNG, WebP, GIF, BMP, and SVG (AVIF and HEIC decode only in supporting browsers). Output is encoded entirely by the Browser Canvas API: WebP, JPEG, PNG, plus sanitized & minified SVG. AVIF, GIF, and TIFF are not re-encodable via Canvas and fall back to WebP.',
     },
     {
       q: 'What is the difference between Lossless and Lossy compression?',
@@ -20,11 +20,11 @@ export const FaqSection: React.FC = () => {
     },
     {
       q: 'How does Target File Size mode work?',
-      a: 'Instead of guessing a quality slider, you enter your target in kilobytes (e.g., 200 KB). ZakPix AI executes a multi-pass binary search across quantization matrices to converge on the highest visual fidelity that stays under your ceiling.',
+      a: 'Instead of guessing a quality slider, you enter your target in kilobytes (e.g., 200 KB). ZakPix AI runs an iterative quality search over Canvas re-encodes to converge on the highest visual fidelity that stays under your ceiling.',
     },
     {
       q: 'Are my images stored on the server?',
-      a: 'No. Files are held strictly in ephemeral RAM buffers during compression and immediately garbage-collected upon response completion. We also offer a Browser Canvas engine for 100% client-local offline processing.',
+      a: 'No. Compression and inspection happen entirely in your browser via the Canvas API, so your images never leave your device. The server is only contacted if you explicitly opt in to deep Gemini AI analysis or generate a batch ZIP download.',
     },
     {
       q: 'How does the AI Content Inspection work?',

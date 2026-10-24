@@ -19,13 +19,11 @@ import {
   CodecCapability,
   AIAnalysisResult,
 } from './types/compression.js';
-import {
-  fetchActiveCodecs,
-  inspectFileOnServer,
-  compressFileOnServer,
-  downloadZipBundle,
-} from './services/api.js';
+import { downloadZipBundle } from './services/api.js';
 import { compressInBrowser } from './services/clientCompressor.js';
+import { inspectImageInBrowser } from './utils/browserInspect.js';
+import { analyzeImageHeuristically } from './utils/imageHeuristics.js';
+import { BROWSER_CODECS } from './constants/browserCodecs.js';
 import samplePhotoPath from './assets/images/sample_landscape_photo_1792670244403.jpg';
 import sampleProductPath from './assets/images/sample_product_watch_1792670260266.jpg';
 
@@ -41,7 +39,6 @@ export default function App() {
 
   const [queue, setQueue] = useState<FileQueueItem[]>([]);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-  const [engine, setEngine] = useState<'server' | 'browser'>('server');
   const [isProcessingBatch, setIsProcessingBatch] = useState<boolean>(false);
 
   // Sync theme with document element class
@@ -64,10 +61,8 @@ export default function App() {
   const [isTestsModalOpen, setIsTestsModalOpen] = useState(false);
   const [inspectingAiItem, setInspectingAiItem] = useState<FileQueueItem | null>(null);
 
-  // Server codecs metadata
-  const [codecs, setCodecs] = useState<CodecCapability[]>([]);
-  const [sharpVersion, setSharpVersion] = useState<string>('0.35.5');
-  const [vipsVersion, setVipsVersion] = useState<string>('8.18.7');
+  // Codec capabilities surfaced in the Format Matrix modal (Browser Canvas API)
+  const [codecs] = useState<CodecCapability[]>(BROWSER_CODECS);
 
   // Global compression settings
   const [globalOptions, setGlobalOptions] = useState<CompressionOptions>({
@@ -78,17 +73,6 @@ export default function App() {
     stripMetadata: true,
     preserveTransparency: true,
   });
-
-  // Fetch active codecs on initial mount
-  useEffect(() => {
-    fetchActiveCodecs()
-      .then((data) => {
-        setCodecs(data.codecs);
-        setSharpVersion(data.sharpVersion);
-        setVipsVersion(data.vipsVersion);
-      })
-      .catch((err) => console.warn('Could not probe server codecs:', err));
-  }, []);
 
   // Inspect and add files to queue
   const handleFilesSelected = useCallback(
@@ -109,64 +93,31 @@ export default function App() {
         setSelectedItemId(newItems[0].id);
       }
 
-      // Inspect each file
+      // Inspect each file locally in the browser (Canvas API)
       for (const item of newItems) {
         try {
-          if (engine === 'server') {
-            const { metadata, aiAnalysis } = await inspectFileOnServer(item.file);
-            setQueue((prev) =>
-              prev.map((q) =>
-                q.id === item.id
-                  ? {
-                      ...q,
-                      status: 'ready',
-                      metadata,
-                      aiAnalysis,
-                      // If smart mode, pre-populate recommended format
-                      options: {
-                        ...q.options,
-                        targetFormat:
-                          q.options.mode === 'smart'
-                            ? aiAnalysis.recommendedFormat
-                            : q.options.targetFormat,
-                      },
-                    }
-                  : q
-              )
-            );
-          } else {
-            // Browser inspection
-            const img = new Image();
-            img.src = item.previewUrl;
-            await new Promise((res) => {
-              img.onload = res;
-              img.onerror = res;
-            });
-            setQueue((prev) =>
-              prev.map((q) =>
-                q.id === item.id
-                  ? {
-                      ...q,
-                      status: 'ready',
-                      metadata: {
-                        format: item.file.type.replace('image/', '') || 'jpeg',
-                        width: img.naturalWidth || 800,
-                        height: img.naturalHeight || 600,
-                        space: 'srgb',
-                        channels: 4,
-                        hasAlpha: true,
-                        isAnimated: false,
-                        hasProfile: false,
-                        fileSizeBytes: item.file.size,
-                        mimeType: item.file.type || 'image/jpeg',
-                        detectedType: 'photograph',
-                        entropy: 5.5,
-                      },
-                    }
-                  : q
-              )
-            );
-          }
+          const metadata = await inspectImageInBrowser(item.file);
+          const aiAnalysis = analyzeImageHeuristically(metadata);
+          setQueue((prev) =>
+            prev.map((q) =>
+              q.id === item.id
+                ? {
+                    ...q,
+                    status: 'ready',
+                    metadata,
+                    aiAnalysis,
+                    // If smart mode, pre-populate recommended format
+                    options: {
+                      ...q.options,
+                      targetFormat:
+                        q.options.mode === 'smart'
+                          ? aiAnalysis.recommendedFormat
+                          : q.options.targetFormat,
+                    },
+                  }
+                : q
+            )
+          );
         } catch (err: any) {
           console.error('Inspection failed for:', item.name, err);
           setQueue((prev) =>
@@ -183,7 +134,7 @@ export default function App() {
         }
       }
     },
-    [engine, globalOptions, selectedItemId]
+    [globalOptions, selectedItemId]
   );
 
   // Load sample image
@@ -240,12 +191,7 @@ export default function App() {
       );
 
       try {
-        let result;
-        if (engine === 'server') {
-          result = await compressFileOnServer(item.file, item.options);
-        } else {
-          result = await compressInBrowser(item.file, item.options);
-        }
+        const result = await compressInBrowser(item.file, item.options);
 
         setQueue((prev) =>
           prev.map((q) =>
@@ -275,7 +221,7 @@ export default function App() {
         );
       }
     },
-    [engine, queue]
+    [queue]
   );
 
   // Batch optimize all items in queue
@@ -387,8 +333,6 @@ export default function App() {
       <Navbar
         onOpenCodecs={() => setIsCodecsModalOpen(true)}
         onOpenTests={() => setIsTestsModalOpen(true)}
-        engine={engine}
-        onToggleEngine={() => setEngine((e) => (e === 'server' ? 'browser' : 'server'))}
         queueCount={queue.length}
         onProcessAll={handleOptimizeAll}
         isProcessing={isProcessingBatch}
@@ -399,11 +343,14 @@ export default function App() {
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
         {/* Hero Section */}
         <div className="text-center max-w-3xl mx-auto pt-4 pb-2">
-          <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white" style={{ textWrap: 'balance' }}>
+          <h1
+            className="text-3xl sm:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-primary-500 via-fuchsia-500 to-amber-400 bg-clip-text text-transparent animate-gradient-x"
+            style={{ textWrap: 'balance' }}
+          >
             ZakPix AI — Intelligent Image Compression & Optimization
           </h1>
           <p className="mt-4 text-base text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
-            Lossless and content-aware lossy optimization powered by Sharp, libvips, and smart heuristic content classification. Transcode across WebP, AVIF, JPEG, PNG, GIF, and SVG.
+            100% in-browser, content-aware optimization powered by the Canvas API and smart heuristic content classification. Images never leave your device. Transcode across WebP, JPEG, PNG, and SVG.
           </p>
         </div>
 
@@ -492,8 +439,6 @@ export default function App() {
         isOpen={isCodecsModalOpen}
         onClose={() => setIsCodecsModalOpen(false)}
         codecs={codecs}
-        sharpVersion={sharpVersion}
-        vipsVersion={vipsVersion}
       />
 
       <AiAnalysisModal

@@ -14,7 +14,8 @@ import {
   RefreshCw,
   Terminal,
 } from 'lucide-react';
-import { compressFileOnServer, inspectFileOnServer } from '../services/api.js';
+import { compressInBrowser } from '../services/clientCompressor.js';
+import { inspectImageInBrowser } from '../utils/browserInspect.js';
 
 interface TestCase {
   id: string;
@@ -122,7 +123,7 @@ export const TestRunnerModal: React.FC<{ isOpen: boolean; onClose: () => void }>
       const t0 = performance.now();
       updateTest('sec_svg_sanitization', { status: 'running' });
       const maliciousSvg = createTestSvg(true);
-      const res = await compressFileOnServer(maliciousSvg, {
+      const res = await compressInBrowser(maliciousSvg, {
         mode: 'smart',
         targetFormat: 'svg',
         quality: 80,
@@ -158,9 +159,9 @@ export const TestRunnerModal: React.FC<{ isOpen: boolean; onClose: () => void }>
       const t0 = performance.now();
       updateTest('codec_png_transparency', { status: 'running' });
       const alphaFile = await createTestCanvasImage(true);
-      const meta = await inspectFileOnServer(alphaFile);
+      const meta = await inspectImageInBrowser(alphaFile);
 
-      if (meta.metadata.hasAlpha) {
+      if (meta.hasAlpha) {
         updateTest('codec_png_transparency', {
           status: 'passed',
           message: 'Alpha channel correctly detected (channels: 4, hasAlpha: true).',
@@ -184,7 +185,7 @@ export const TestRunnerModal: React.FC<{ isOpen: boolean; onClose: () => void }>
       const t0 = performance.now();
       updateTest('codec_webp_lossless', { status: 'running' });
       const sampleFile = await createTestCanvasImage(false);
-      const res = await compressFileOnServer(sampleFile, {
+      const res = await compressInBrowser(sampleFile, {
         mode: 'lossless',
         targetFormat: 'webp',
         quality: 100,
@@ -215,7 +216,7 @@ export const TestRunnerModal: React.FC<{ isOpen: boolean; onClose: () => void }>
       const t0 = performance.now();
       updateTest('target_size_convergence', { status: 'running' });
       const sampleFile = await createTestCanvasImage(false);
-      const res = await compressFileOnServer(sampleFile, {
+      const res = await compressInBrowser(sampleFile, {
         mode: 'target_size',
         targetFormat: 'jpeg',
         quality: 80,
@@ -246,7 +247,7 @@ export const TestRunnerModal: React.FC<{ isOpen: boolean; onClose: () => void }>
       const t0 = performance.now();
       updateTest('format_jpeg_conversion', { status: 'running' });
       const sampleFile = await createTestCanvasImage(false);
-      const res = await compressFileOnServer(sampleFile, {
+      const res = await compressInBrowser(sampleFile, {
         mode: 'balanced',
         targetFormat: 'jpeg',
         quality: 80,
@@ -279,10 +280,10 @@ export const TestRunnerModal: React.FC<{ isOpen: boolean; onClose: () => void }>
       const badFile = new File([badBlob], 'corrupt.png', { type: 'image/png' });
 
       try {
-        await inspectFileOnServer(badFile);
+        await inspectImageInBrowser(badFile);
         updateTest('sec_corrupt_file', {
           status: 'failed',
-          message: 'Server accepted corrupt non-image buffer!',
+          message: 'Inspection accepted corrupt non-image buffer!',
         });
       } catch {
         updateTest('sec_corrupt_file', {
@@ -412,7 +413,7 @@ export const TestRunnerModal: React.FC<{ isOpen: boolean; onClose: () => void }>
 
         {/* Footer */}
         <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-6 py-3 text-xs text-slate-500 dark:text-slate-400">
-          <span>Target Environment: Node.js + Sharp / libvips</span>
+          <span>Target Environment: Browser Canvas API</span>
           <button
             onClick={onClose}
             className="px-4 py-1.5 font-medium text-slate-700 dark:text-slate-200 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"

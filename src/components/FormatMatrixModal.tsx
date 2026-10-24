@@ -11,16 +11,12 @@ interface FormatMatrixModalProps {
   isOpen: boolean;
   onClose: () => void;
   codecs: CodecCapability[];
-  sharpVersion: string;
-  vipsVersion: string;
 }
 
 export const FormatMatrixModal: React.FC<FormatMatrixModalProps> = ({
   isOpen,
   onClose,
   codecs,
-  sharpVersion,
-  vipsVersion,
 }) => {
   if (!isOpen) return null;
 
@@ -34,9 +30,9 @@ export const FormatMatrixModal: React.FC<FormatMatrixModalProps> = ({
               <Cpu className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-base font-semibold text-slate-900 dark:text-white">Runtime Format Registry & Codec Matrix</h3>
+              <h3 className="text-base font-semibold text-slate-900 dark:text-white">Format Matrix &amp; Codec Support</h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Live probed capabilities from Sharp v{sharpVersion} / libvips v{vipsVersion}
+                Capabilities of the Browser Canvas API encoding pipeline
               </p>
             </div>
           </div>
@@ -52,7 +48,7 @@ export const FormatMatrixModal: React.FC<FormatMatrixModalProps> = ({
         {/* Content Table */}
         <div className="p-6 overflow-y-auto space-y-4">
           <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-            Every format is audited against active decoding and encoding libraries. Features like alpha transparency, frame animation, and metadata preservation are enforced honestly without simulated fallbacks.
+            Every format is audited against what the Canvas API can actually decode and encode. Features like alpha transparency and lossless output are reported honestly, without simulated fallbacks.
           </p>
 
           <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
@@ -130,7 +126,7 @@ export const FormatMatrixModal: React.FC<FormatMatrixModalProps> = ({
 
         {/* Footer */}
         <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-6 py-3 text-xs text-slate-500 dark:text-slate-400">
-          <span>Engine: Sharp with libvips bindings</span>
+          <span>Engine: Browser Canvas API</span>
           <button
             onClick={onClose}
             className="px-4 py-1.5 font-medium text-slate-700 dark:text-slate-200 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"

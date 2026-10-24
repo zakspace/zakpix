@@ -9,8 +9,6 @@ import { Layers, ShieldCheck, Cpu, Sun, Moon, Link, Github } from 'lucide-react'
 interface NavbarProps {
   onOpenCodecs: () => void;
   onOpenTests: () => void;
-  engine: 'server' | 'browser';
-  onToggleEngine: () => void;
   queueCount: number;
   onProcessAll: () => void;
   isProcessing: boolean;
@@ -23,8 +21,6 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({
   onOpenCodecs,
   onOpenTests,
-  engine,
-  onToggleEngine,
   queueCount,
   onProcessAll,
   isProcessing,
@@ -83,7 +79,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </a>
         </nav>
 
-        {/* Zone 3: Engine selector, Theme toggle & Primary action */}
+        {/* Zone 3: Theme toggle & Primary action */}
         <div className="flex items-center gap-2.5 shrink-0">
           {/* Theme toggle */}
           <button
@@ -93,18 +89,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="flex items-center justify-center h-8 w-8 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
           >
             {theme === 'dark' ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-slate-700" />}
-          </button>
-
-          {/* Subtle engine switch */}
-          <button
-            onClick={onToggleEngine}
-            title={`Active Engine: ${engine === 'server' ? 'Sharp (libvips)' : 'Browser Canvas'}`}
-            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md transition-colors cursor-pointer"
-          >
-            <span className="text-slate-400 dark:text-slate-500">Engine:</span>
-            <span className="font-semibold text-slate-700 dark:text-slate-200">
-              {engine === 'server' ? 'Sharp / libvips' : 'Browser Canvas'}
-            </span>
           </button>
 
           {queueCount > 0 && (

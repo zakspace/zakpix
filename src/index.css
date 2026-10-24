@@ -42,6 +42,28 @@
   font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
+/* Animated multi-color gradient used by the hero title */
+@keyframes gradient-x {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient-x {
+  background-size: 200% 200%;
+  animation: gradient-x 6s ease infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-gradient-x {
+    animation: none;
+  }
+}
+
 /* Transparency checkerboard pattern for accurate image inspection */
 .bg-checkerboard {
   background-image: 

@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import sharp from 'sharp';
 import { CodecCapability } from '../types/compression.js';
 
 // Base capabilities dictionary
@@ -203,36 +202,4 @@ export function sniffFormat(buffer: Buffer): { format: string; mimeType: string 
   }
 
   return null;
-}
-
-/**
- * Probe Sharp and libvips runtime to determine real active codec capabilities
- */
-export function getActiveCodecs(): {
-  sharpVersion: string;
-  vipsVersion: string;
-  codecs: CodecCapability[];
-} {
-  const sharpFormats = (sharp as any).format || {};
-  const sharpVersions = (sharp as any).versions || {};
-
-  const codecs: CodecCapability[] = Object.keys(STANDARD_CODECS).map((key) => {
-    const base = STANDARD_CODECS[key];
-    const sf = sharpFormats[key] || {};
-
-    const inputSupported = sf.input?.buffer ?? (key === 'svg' || key === 'bmp');
-    const outputSupported = sf.output?.buffer ?? false;
-
-    return {
-      ...base,
-      input: Boolean(inputSupported),
-      output: Boolean(outputSupported),
-    };
-  });
-
-  return {
-    sharpVersion: sharpVersions.sharp || 'installed',
-    vipsVersion: sharpVersions.vips || 'installed',
-    codecs,
-  };
 }

@@ -44,7 +44,7 @@ export const AiAnalysisModal: React.FC<AiAnalysisModalProps> = ({
   const handleRunGeminiScan = async () => {
     setIsRunningGemini(true);
     try {
-      const res = await requestDeepAiAnalysis(item.file, true);
+      const res = await requestDeepAiAnalysis(item.file, true, item.metadata);
       setAnalysisState(res.analysis);
     } catch (err) {
       console.error('Gemini scan failed:', err);

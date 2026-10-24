@@ -4,16 +4,10 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import sharp from 'sharp';
-import { sniffFormat, getActiveCodecs } from '../src/server/formatRegistry.js';
-import {
-  validateImageBuffer,
-  sanitizeSvg,
-  checkDimensionSafety,
-} from '../src/server/securityValidator.js';
-import { inspectImageBuffer } from '../src/server/imageInspector.js';
-import { compressImage } from '../src/server/compressionEngine.js';
-import { analyzeImageHeuristically } from '../src/server/aiOptimizer.js';
+import { sniffFormat } from '../src/server/formatRegistry.js';
+import { checkDimensionSafety } from '../src/server/securityValidator.js';
+import { sanitizeSvg, minifySvgText } from '../src/utils/svg.js';
+import { analyzeImageHeuristically } from '../src/utils/imageHeuristics.js';
 
 describe('Format Registry & Sniffing', () => {
   it('correctly sniffs PNG header bytes', () => {
@@ -38,18 +32,9 @@ describe('Format Registry & Sniffing', () => {
     expect(sniffed?.format).toBe('webp');
     expect(sniffed?.mimeType).toBe('image/webp');
   });
-
-  it('probes Sharp runtime codecs and returns valid version strings', () => {
-    const data = getActiveCodecs();
-    expect(data.sharpVersion).toBeTruthy();
-    expect(data.codecs.length).toBeGreaterThan(5);
-    const pngCodec = data.codecs.find((c) => c.format === 'png');
-    expect(pngCodec?.input).toBe(true);
-    expect(pngCodec?.output).toBe(true);
-  });
 });
 
-describe('Security Validator', () => {
+describe('SVG Utilities', () => {
   it('sanitizes malicious script tags and inline events from SVG', () => {
     const dirtySvg = `<svg xmlns="http://www.w3.org/2000/svg">
       <script>alert("xss")</script>
@@ -66,6 +51,20 @@ describe('Security Validator', () => {
     expect(cleaned).not.toContain('<foreignObject');
   });
 
+  it('minifies SVG text without breaking structure', () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+      <!-- comment should be stripped -->
+      <rect width="100" height="100" fill="#10B981" />
+    </svg>`;
+
+    const minified = minifySvgText(svg);
+    expect(minified).not.toContain('<!-- comment');
+    expect(minified).toContain('<rect');
+    expect(minified).not.toContain('\n');
+  });
+});
+
+describe('Security Validator', () => {
   it('rejects image dimensions that trigger decompression bomb limits', () => {
     const dimensionBomb = checkDimensionSafety(20000, 1000); // Exceeds 16384px dimension
     expect(dimensionBomb.safe).toBe(false);
@@ -79,75 +78,6 @@ describe('Security Validator', () => {
   it('accepts safe image dimensions', () => {
     const safe = checkDimensionSafety(1920, 1080);
     expect(safe.safe).toBe(true);
-  });
-});
-
-describe('Sharp Compression Engine', () => {
-  it('compresses a synthetic image to WebP with byte reduction', async () => {
-    // Create a 200x200 test PNG image
-    const rawPng = await sharp({
-      create: {
-        width: 200,
-        height: 200,
-        channels: 4,
-        background: { r: 16, g: 185, b: 129, alpha: 0.8 },
-      },
-    })
-      .png()
-      .toBuffer();
-
-    const { result, outputBuffer } = await compressImage(rawPng, {
-      mode: 'balanced',
-      targetFormat: 'webp',
-      quality: 80,
-    });
-
-    expect(result.success).toBe(true);
-    expect(result.outputFormat).toBe('webp');
-    expect(outputBuffer.length).toBeGreaterThan(0);
-    expect(result.optimizedSizeBytes).toBe(outputBuffer.length);
-  });
-
-  it('preserves alpha transparency when compressing to WebP', async () => {
-    const alphaPng = await sharp({
-      create: {
-        width: 100,
-        height: 100,
-        channels: 4,
-        background: { r: 255, g: 0, b: 0, alpha: 0.5 },
-      },
-    })
-      .png()
-      .toBuffer();
-
-    const { outputBuffer } = await compressImage(alphaPng, {
-      mode: 'transparent',
-      targetFormat: 'webp',
-      quality: 85,
-    });
-
-    const meta = await sharp(outputBuffer).metadata();
-    expect(meta.hasAlpha).toBe(true);
-  });
-
-  it('correctly minifies vector SVG content', async () => {
-    const svgInput = Buffer.from(
-      `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
-        <!-- comment should be stripped -->
-        <rect width="100" height="100" fill="#10B981" />
-      </svg>`,
-      'utf8'
-    );
-
-    const { result, outputBuffer } = await compressImage(svgInput, {
-      mode: 'smart',
-      targetFormat: 'svg',
-      quality: 80,
-    });
-
-    expect(result.success).toBe(true);
-    expect(result.outputFormat).toBe('svg');
-    expect(outputBuffer.toString('utf8')).not.toContain('<!-- comment');
   });
 });
 
