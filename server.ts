@@ -16,7 +16,7 @@ import {
 } from './src/server/aiOptimizer.js';
 import { ImageMetadata } from './src/types/compression.js';
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -133,7 +133,10 @@ app.post('/api/create-zip', async (req: Request, res: Response) => {
 async function startServer() {
   const distPath = path.resolve(__dirname, 'dist');
   const distIndexExists = fs.existsSync(path.resolve(distPath, 'index.html'));
-  const isProd = process.env.NODE_ENV === 'production' || distIndexExists;
+  // Run production static mode only if NODE_ENV is production or running compiled server.js
+  const isProd =
+    process.env.NODE_ENV === 'production' ||
+    (Boolean(process.argv[1]?.endsWith('server.js')) && distIndexExists);
 
   if (isProd && distIndexExists) {
     app.use(express.static(distPath));
@@ -147,10 +150,26 @@ async function startServer() {
       appType: 'spa',
     });
     app.use(vite.middlewares);
+
+    // Ensure index.html is transformed and served for all SPA routes in development
+    app.use('*', async (req: Request, res: Response, next) => {
+      const url = req.originalUrl;
+      try {
+        const indexPath = path.resolve(__dirname, 'index.html');
+        let template = fs.readFileSync(indexPath, 'utf-8');
+        template = await vite.transformIndexHtml(url, template);
+        res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
+      } catch (e: any) {
+        if (typeof vite.ssrFixStacktrace === 'function') {
+          vite.ssrFixStacktrace(e);
+        }
+        next(e);
+      }
+    });
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`ZakPix AI Server running on port ${PORT}`);
+    console.log(`ZakPix AI Server running on port ${PORT} (${isProd ? 'production' : 'development'})`);
   });
 }
 

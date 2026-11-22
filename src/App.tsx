@@ -12,7 +12,10 @@ import { FormatMatrixModal } from './components/FormatMatrixModal.js';
 import { AiAnalysisModal } from './components/AiAnalysisModal.js';
 import { TestRunnerModal } from './components/TestRunnerModal.js';
 import { FeatureHighlights } from './components/FeatureHighlights.js';
-import { FaqSection } from './components/FaqSection.js';
+import { ImageOptimizationGuide } from './components/ImageOptimizationGuide.js';
+import { PrivacyView } from './components/PrivacyView.js';
+import { AboutView } from './components/AboutView.js';
+import { Footer } from './components/Footer.js';
 import {
   FileQueueItem,
   CompressionOptions,
@@ -37,6 +40,15 @@ export default function App() {
     return 'dark';
   });
 
+  // Client-side routing state: supports '/', '/privacy', '/about'
+  const [pathname, setPathname] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const p = window.location.pathname.replace(/\/+$/, '') || '/';
+      return p;
+    }
+    return '/';
+  });
+
   const [queue, setQueue] = useState<FileQueueItem[]>([]);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [isProcessingBatch, setIsProcessingBatch] = useState<boolean>(false);
@@ -51,6 +63,52 @@ export default function App() {
     }
     localStorage.setItem('zakpix-theme', theme);
   }, [theme]);
+
+  // Sync route changes with browser history and document title
+  useEffect(() => {
+    const handlePopState = () => {
+      const p = window.location.pathname.replace(/\/+$/, '') || '/';
+      setPathname(p);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  useEffect(() => {
+    if (pathname === '/privacy') {
+      document.title = 'Privacy Policy - ZakPix AI';
+    } else if (pathname === '/about') {
+      document.title = 'About ZakPix AI - Architecture & High-Performance Optimization';
+    } else {
+      document.title = 'ZakPix AI - Production Image Compression & Optimization Platform';
+    }
+  }, [pathname]);
+
+  // Handle in-app navigation
+  const handleNavigate = useCallback((path: string) => {
+    if (path.startsWith('/#') || path.startsWith('#')) {
+      const hash = path.startsWith('/#') ? path.substring(1) : path;
+      if (window.location.pathname !== '/') {
+        window.history.pushState(null, '', `/${hash}`);
+        setPathname('/');
+        setTimeout(() => {
+          const el = document.querySelector(hash);
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      } else {
+        window.history.pushState(null, '', hash);
+        const el = document.querySelector(hash);
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }
+      return;
+    }
+
+    const normalized = path.replace(/\/+$/, '') || '/';
+    window.history.pushState(null, '', normalized);
+    setPathname(normalized);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   const handleToggleTheme = () => {
     setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
@@ -93,6 +151,11 @@ export default function App() {
         setSelectedItemId(newItems[0].id);
       }
 
+      // If on another route, navigate home to show tool
+      if (pathname !== '/') {
+        handleNavigate('/');
+      }
+
       // Inspect each file locally in the browser (Canvas API)
       for (const item of newItems) {
         try {
@@ -125,7 +188,7 @@ export default function App() {
               q.id === item.id
                 ? {
                     ...q,
-                    status: 'ready', // allow user to proceed with basic info
+                    status: 'ready',
                     errorMessage: err.message,
                   }
                 : q
@@ -134,7 +197,7 @@ export default function App() {
         }
       }
     },
-    [globalOptions, selectedItemId]
+    [globalOptions, selectedItemId, pathname, handleNavigate]
   );
 
   // Load sample image
@@ -326,8 +389,6 @@ export default function App() {
     [handleUpdateItemOptions]
   );
 
-  const selectedItem = queue.find((q) => q.id === selectedItemId);
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans selection:bg-primary-500/20 selection:text-primary-500 dark:selection:text-primary-300 transition-colors">
       <Navbar
@@ -338,101 +399,99 @@ export default function App() {
         isProcessing={isProcessingBatch}
         theme={theme}
         onToggleTheme={handleToggleTheme}
+        currentPath={pathname}
+        onNavigate={handleNavigate}
       />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
-        {/* Hero Section */}
-        <div className="text-center max-w-3xl mx-auto pt-4 pb-2">
-          <h1
-            className="text-3xl sm:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-primary-500 via-fuchsia-500 to-amber-400 bg-clip-text text-transparent animate-gradient-x"
-            style={{ textWrap: 'balance' }}
-          >
-            ZakPix AI — Intelligent Image Compression & Optimization
-          </h1>
-          <p className="mt-4 text-base text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
-            100% in-browser, content-aware optimization powered by the Canvas API and smart heuristic content classification. Images never leave your device. Transcode across WebP, JPEG, PNG, and SVG.
-          </p>
-        </div>
-
-        {/* Upload DropZone */}
-        <section id="upload">
-          <DropZone
-            onFilesSelected={handleFilesSelected}
-            onLoadSample={handleLoadSample}
-            disabled={isProcessingBatch}
+      <main className="flex-1 w-full">
+        {pathname === '/privacy' ? (
+          <PrivacyView onNavigateHome={() => handleNavigate('/')} />
+        ) : pathname === '/about' ? (
+          <AboutView
+            onNavigateHome={() => handleNavigate('/')}
+            onOpenCodecs={() => setIsCodecsModalOpen(true)}
           />
-        </section>
+        ) : (
+          /* Home View: Image compression tool front and center + below-the-fold Guide & FAQ */
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+            {/* Hero Section */}
+            <div className="text-center max-w-3xl mx-auto pt-4 pb-2">
+              <h1
+                className="text-4xl sm:text-6xl font-extrabold tracking-tight leading-[1.1] text-slate-900 dark:text-white animate-fade-up"
+                style={{ textWrap: 'balance' }}
+              >
+                ZakPix AI —{' '}
+                <span className="gradient-text">Intelligent Image Compression &amp; Optimization</span>
+              </h1>
+              <p className="mt-4 text-base text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
+                100% in-browser, content-aware optimization powered by the Canvas API and smart heuristic content classification. Images never leave your device. Transcode across WebP, JPEG, PNG, and SVG.
+              </p>
+            </div>
 
-        {/* Workspace & Batch Studio: 1 Card uniting Compression Engine (Top), Before/After (Left), and Queue (Right) */}
-        {queue.length > 0 && (
-          <section id="workspace" className="space-y-8">
-            {/* Unified 1-Card Image Compression Studio */}
-            <Workspace
-              queue={queue}
-              selectedItemId={selectedItemId}
-              onSelectItem={(id) => setSelectedItemId(id)}
-              onRemoveItem={handleRemoveItem}
-              onClearAll={handleClearAll}
-              onOptimizeItem={handleOptimizeItem}
-              onOptimizeAll={handleOptimizeAll}
-              onUpdateGlobalOptions={handleUpdateGlobalOptions}
-              onUpdateItemOptions={handleUpdateItemOptions}
-              globalOptions={globalOptions}
-              onDeepAiInspect={(item) => setInspectingAiItem(item)}
-              isProcessing={isProcessingBatch}
-              onDownloadItem={handleDownloadSingle}
-              onDownloadAllZip={handleDownloadAllZip}
-              onAddMoreFiles={() => {
-                const input = document.querySelector('input[type="file"]') as HTMLInputElement;
-                if (input) input.click();
-              }}
-            />
-
-            {/* Overall Results & KPI Panel (visible when at least one image has completed) */}
-            {queue.some((q) => q.result) && (
-              <ResultsPanel
-                queue={queue}
-                onDownloadAllZip={handleDownloadAllZip}
-                onDownloadSingle={handleDownloadSingle}
-                onAddMore={() => {
-                  const input = document.querySelector('input[type="file"]') as HTMLInputElement;
-                  if (input) input.click();
-                }}
+            {/* Upload DropZone */}
+            <section id="upload">
+              <DropZone
+                onFilesSelected={handleFilesSelected}
+                onLoadSample={handleLoadSample}
+                disabled={isProcessingBatch}
               />
+            </section>
+
+            {/* Workspace & Batch Studio: 1 Card uniting Compression Engine (Top), Before/After (Left), and Queue (Right) */}
+            {queue.length > 0 && (
+              <section id="workspace" className="space-y-8">
+                {/* Unified 1-Card Image Compression Studio */}
+                <Workspace
+                  queue={queue}
+                  selectedItemId={selectedItemId}
+                  onSelectItem={(id) => setSelectedItemId(id)}
+                  onRemoveItem={handleRemoveItem}
+                  onClearAll={handleClearAll}
+                  onOptimizeItem={handleOptimizeItem}
+                  onOptimizeAll={handleOptimizeAll}
+                  onUpdateGlobalOptions={handleUpdateGlobalOptions}
+                  onUpdateItemOptions={handleUpdateItemOptions}
+                  globalOptions={globalOptions}
+                  onDeepAiInspect={(item) => setInspectingAiItem(item)}
+                  isProcessing={isProcessingBatch}
+                  onDownloadItem={handleDownloadSingle}
+                  onDownloadAllZip={handleDownloadAllZip}
+                  onAddMoreFiles={() => {
+                    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+                    if (input) input.click();
+                  }}
+                />
+
+                {/* Overall Results & KPI Panel (visible when at least one image has completed) */}
+                {queue.some((q) => q.result) && (
+                  <ResultsPanel
+                    queue={queue}
+                    onDownloadAllZip={handleDownloadAllZip}
+                    onDownloadSingle={handleDownloadSingle}
+                    onAddMore={() => {
+                      const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+                      if (input) input.click();
+                    }}
+                  />
+                )}
+              </section>
             )}
-          </section>
+
+            {/* Technical Architecture Feature Highlights */}
+            <FeatureHighlights />
+
+            {/* Below-the-fold Image Optimization Guide & FAQ */}
+            <ImageOptimizationGuide />
+          </div>
         )}
-
-        {/* Technical Architecture Feature Highlights */}
-        <FeatureHighlights />
-
-        {/* FAQ Section */}
-        <FaqSection />
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-200 dark:border-slate-900 bg-white dark:bg-slate-950 py-8 text-center text-xs text-slate-500 dark:text-slate-400 transition-colors">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span>ZakPix AI · Production Image Optimization Platform</span>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setIsCodecsModalOpen(true)}
-              className="hover:text-slate-900 dark:hover:text-slate-300 transition-colors cursor-pointer"
-            >
-              Codec Matrix
-            </button>
-            <span>·</span>
-            <button
-              onClick={() => setIsTestsModalOpen(true)}
-              className="hover:text-slate-900 dark:hover:text-slate-300 transition-colors cursor-pointer"
-            >
-              Test Suite
-            </button>
-            <span>·</span>
-            <span>Ephemeral RAM Execution</span>
-          </div>
-        </div>
-      </footer>
+      {/* Accessible Footer with Links & Attribution */}
+      <Footer
+        onOpenCodecs={() => setIsCodecsModalOpen(true)}
+        onOpenTests={() => setIsTestsModalOpen(true)}
+        onNavigate={handleNavigate}
+      />
 
       {/* Modals */}
       <FormatMatrixModal

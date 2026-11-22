@@ -143,7 +143,7 @@ Return valid JSON only, no markdown markers or conversational preamble.`;
 }
 
 // server.ts
-dotenv.config();
+dotenv.config({ quiet: true });
 var __filename = fileURLToPath(import.meta.url);
 var __dirname = path.dirname(__filename);
 var app = express();
@@ -236,7 +236,7 @@ app.post("/api/create-zip", async (req, res) => {
 async function startServer() {
   const distPath = path.resolve(__dirname, "dist");
   const distIndexExists = fs.existsSync(path.resolve(distPath, "index.html"));
-  const isProd = process.env.NODE_ENV === "production" || distIndexExists;
+  const isProd = process.env.NODE_ENV === "production" || Boolean(process.argv[1]?.endsWith("server.js")) && distIndexExists;
   if (isProd && distIndexExists) {
     app.use(express.static(distPath));
     app.get("*", (_req, res) => {
@@ -249,9 +249,23 @@ async function startServer() {
       appType: "spa"
     });
     app.use(vite.middlewares);
+    app.use("*", async (req, res, next) => {
+      const url = req.originalUrl;
+      try {
+        const indexPath = path.resolve(__dirname, "index.html");
+        let template = fs.readFileSync(indexPath, "utf-8");
+        template = await vite.transformIndexHtml(url, template);
+        res.status(200).set({ "Content-Type": "text/html" }).end(template);
+      } catch (e) {
+        if (typeof vite.ssrFixStacktrace === "function") {
+          vite.ssrFixStacktrace(e);
+        }
+        next(e);
+      }
+    });
   }
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`ZakPix AI Server running on port ${PORT}`);
+    console.log(`ZakPix AI Server running on port ${PORT} (${isProd ? "production" : "development"})`);
   });
 }
 startServer().catch((err) => {

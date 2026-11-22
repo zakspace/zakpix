@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Layers, ShieldCheck, Cpu, Sun, Moon, Link, Github } from 'lucide-react';
+import { Layers, ShieldCheck, Cpu, Sun, Moon, Github, Sparkles, BookOpen, FileText, Info } from 'lucide-react';
 
 interface NavbarProps {
   onOpenCodecs: () => void;
@@ -14,8 +14,10 @@ interface NavbarProps {
   isProcessing: boolean;
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
-  githubUrl?: string; // Optional prop for your repository URL
-  brandUrl?: string;  // Optional prop for your brand/home URL
+  githubUrl?: string;
+  brandUrl?: string;
+  currentPath?: string;
+  onNavigate?: (path: string) => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -27,20 +29,30 @@ export const Navbar: React.FC<NavbarProps> = ({
   theme,
   onToggleTheme,
   githubUrl = 'https://github.com/zakspace/zakpix',
-  brandUrl = '#',
+  brandUrl = '/',
+  currentPath = '/',
+  onNavigate,
 }) => {
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, path: string) => {
+    if (onNavigate) {
+      e.preventDefault();
+      onNavigate(path);
+    }
+  };
+
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-200 dark:border-slate-800 bg-white/85 dark:bg-slate-950/80 backdrop-blur-md transition-colors">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-8 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 sm:gap-8 px-4 sm:px-6 lg:px-8">
         {/* Zone 1: Brand wordmark with link */}
         <a 
           href={brandUrl}
+          onClick={(e) => handleNavClick(e, '/')}
           className="flex items-center gap-2 shrink-0 group cursor-pointer focus:outline-none"
         >
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-600 border border-primary-500/20 text-primary-600 dark:text-primary-400 p-1 transition-transform group-hover:scale-105">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-600 border border-primary-500/20 text-white p-1 transition-transform group-hover:scale-105">
             <svg width="375" height="366" viewBox="0 0 375 366" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M356.331 17.8266L356.332 17.8278C362.168 23.5264 366.595 30.0992 369.622 37.1226L369.779 37.4874L370.046 38.1248C372.971 45.1584 374.59 52.8358 374.59 60.8666V60.8678C374.59 68.8883 372.976 76.5581 370.055 83.5866L369.754 84.3021L369.633 84.5862C366.605 91.6186 362.175 98.2016 356.332 103.907L106.348 347.977C82.1024 371.649 42.4301 371.649 18.1843 347.977V347.976C-6.06144 324.303 -6.06144 285.571 18.1843 261.898L161.744 121.733H62.7936C28.505 121.733 0.452484 94.345 0.452484 60.8678V60.8666C0.452484 27.3894 28.505 0 62.7936 0H312.249C320.486 0 328.362 1.58464 335.576 4.45056L336.115 4.66688L336.602 4.86528C343.783 7.81952 350.503 12.137 356.331 17.8266Z" fill="white"></path> 
-              <path fill-rule="evenodd" clip-rule="evenodd" d="M312.25 365.696C277.776 365.696 249.909 338.488 249.909 304.829C249.909 271.171 277.776 243.963 312.25 243.963C346.724 243.963 374.591 271.171 374.591 304.829C374.591 338.488 346.724 365.696 312.25 365.696Z" fill="#EEF2FF"></path>               
+              <path fillRule="evenodd" clipRule="evenodd" d="M312.25 365.696C277.776 365.696 249.909 338.488 249.909 304.829C249.909 271.171 277.776 243.963 312.25 243.963C346.724 243.963 374.591 271.171 374.591 304.829C374.591 338.488 346.724 365.696 312.25 365.696Z" fill="#EEF2FF"></path>               
             </svg>
           </div>
           <span className="text-lg font-bold tracking-tight text-slate-900 dark:text-white whitespace-nowrap">
@@ -50,7 +62,17 @@ export const Navbar: React.FC<NavbarProps> = ({
         </a>
 
         {/* Zone 2: Clean single-line text navigation links */}
-        <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600 dark:text-slate-300">
+        <nav className="hidden md:flex items-center gap-5 text-sm font-medium text-slate-600 dark:text-slate-300">
+          {/* <a
+            href="/"
+            onClick={(e) => handleNavClick(e, '/')}
+            className={`hover:text-primary-600 dark:hover:text-primary-400 transition-colors whitespace-nowrap shrink-0 ${
+              currentPath === '/' ? 'text-primary-600 dark:text-primary-400 font-semibold' : ''
+            }`}
+          >
+            Compressor
+          </a>
+           */}
           <button
             onClick={onOpenCodecs}
             className="hover:text-slate-900 dark:hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1.5"
@@ -72,7 +94,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             Architecture
           </a>
           <a
-            href="#faq"
+            href="#guide"
             className="hover:text-slate-900 dark:hover:text-white transition-colors whitespace-nowrap shrink-0"
           >
             FAQ
@@ -91,7 +113,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {theme === 'dark' ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-slate-700" />}
           </button>
 
-          {queueCount > 0 && (
+          {queueCount > 0 && currentPath === '/' && (
             <button
               onClick={onProcessAll}
               disabled={isProcessing}

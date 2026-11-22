@@ -42,25 +42,52 @@
   font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-/* Animated multi-color gradient used by the hero title */
-@keyframes gradient-x {
-  0%,
-  100% {
+/* Hero title treatment matching the ZAK Icons hero: solid heading with a
+   fade-up entrance, and a shimmering violet-to-teal gradient on the highlighted phrase. */
+@keyframes shimmer {
+  0% {
     background-position: 0% 50%;
   }
   50% {
     background-position: 100% 50%;
   }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
-.animate-gradient-x {
-  background-size: 200% 200%;
-  animation: gradient-x 6s ease infinite;
+@keyframes fadeUp {
+  0% {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.gradient-text {
+  background-image: linear-gradient(135deg, #6c38ee 20%, #8a57ff 50%, #00d2c4 90%);
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 6s linear infinite;
+}
+
+.animate-fade-up {
+  animation: fadeUp 0.9s ease both;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-gradient-x {
+  .gradient-text,
+  .animate-fade-up {
     animation: none;
+  }
+  .animate-fade-up {
+    opacity: 1;
+    transform: none;
   }
 }
 
